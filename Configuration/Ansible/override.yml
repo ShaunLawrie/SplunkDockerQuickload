@@ -1,0 +1,25 @@
+---
+- name: Yeet the ui-tour and instrumentation prompts
+  copy:
+    src: "{{ item }}"
+    dest: /opt/splunk/etc/system/local/
+    owner: splunk
+    group: splunk
+  with_fileglob:
+    - /tmp/splunkconf/*.conf
+  notify:
+    - Restart the splunkd service
+
+- name: Install the apps by unarchiving them into the apps folder
+  unarchive:
+    src: "{{ item }}"
+    dest: /opt/splunk/etc/apps/
+    owner: splunk
+    group: splunk
+  with_fileglob:
+    - /tmp/splunkapps/*.tgz
+  notify: 
+    - Restart the splunkd service
+
+- name: Pump the data
+  command: "{{ splunk.exec }} add monitor /tmp/splunkdata/* -host seed_data -auth '{{ splunk.admin_user }}:{{ splunk.password }}'"

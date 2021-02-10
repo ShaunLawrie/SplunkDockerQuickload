@@ -1,0 +1,7 @@
+<nav search_view="search">
+  <view name="discover" />
+  <view name="swearing" />
+  <view name="chat" />
+  <view name="dashboards" />
+  <view name="search" />
+</nav>

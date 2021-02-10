@@ -1,0 +1,24 @@
+[app/ui]
+version = 8.0.0
+modtime = 1573642466.253264000
+
+[app/launcher]
+version = 8.0.0
+modtime = 1573642466.255508000
+
+[views/discover]
+owner = admin
+version = 8.0.3
+modtime = 1586700378.278718000
+
+[nav/default]
+version = 8.0.0
+modtime = 1573699240.931591000
+
+[app/package/check_for_updates]
+version = 8.0.0
+modtime = 1573642466.256958000
+
+[app/install/install_source_checksum]
+version = 8.0.0
+modtime = 1573697543.002320000

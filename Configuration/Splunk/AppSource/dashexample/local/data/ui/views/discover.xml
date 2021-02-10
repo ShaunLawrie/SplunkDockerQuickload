@@ -1,0 +1,92 @@
+<dashboard theme="dark">
+  <init>
+    <set token="drilldownnotset">1</set>
+  </init>
+  <label>Discover</label>
+  <row>
+    <panel id="rawdata">
+      <title>Raw Data Sources</title>
+      <table>
+        <search>
+          <query>index=main
+| stats count by host, source
+| sort -count</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">row</option>
+        <format type="number" field="count">
+          <option name="precision">0</option>
+        </format>
+        <drilldown>
+          <set token="drilldown">$row.source$</set>
+          <unset token="drilldownnotset"></unset>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row depends="$drilldownnotset$">
+    <panel>
+      <title>Help</title>
+      <html>
+        <div style="margin-top: 40px; margin-bottom: 40px; text-align: center;">
+          <p>Select a sourcetype above to view details...</p>
+        </div>
+      </html>
+    </panel>
+  </row>
+  <row depends="$drilldown$">
+    <panel>
+      <title>Total Events</title>
+      <single>
+        <search>
+          <query>index=main source="$drilldown$"
+| stats count</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="colorMode">block</option>
+        <option name="drilldown">all</option>
+        <option name="height">243</option>
+        <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="underLabel">$drilldown$</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Event Timeline</title>
+      <chart>
+        <search>
+          <query>index=* source="$drilldown$"
+| eval _time = coalesce(strptime(Date + "-01-01", "%Y-%m-%d"), _time)
+| timechart span=1y count</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row depends="$drilldown$">
+    <panel>
+      <title>Data Summary</title>
+      <table>
+        <search>
+          <query>index=main source="$drilldown$"
+| fieldsummary
+| fields - values</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+</dashboard>

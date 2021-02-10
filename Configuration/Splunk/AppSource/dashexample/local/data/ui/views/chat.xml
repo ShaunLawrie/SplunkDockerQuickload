@@ -1,0 +1,106 @@
+<form theme="dark">
+  <label>Facebook Messenger Chat Overview</label>
+  <fieldset submitButton="false">
+    <input type="text" token="me" searchWhenChanged="true">
+      <label>My name</label>
+    </input>
+  </fieldset>
+  <row depends="$neverset$">
+    <panel>
+      <html>
+      <style>
+        #topemoji {
+          width: 30%!important;
+        }
+        #monthlyemoji {
+          width: 70%!important;
+        }
+      </style>
+    </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Messages</title>
+      <chart>
+        <search>
+          <query>index=* source="/tmp/splunkdata/FlattenedMessages*" Sender="$me$"
+| rex mode=sed field="ChatTitle" "s/([^\s]+).*/\1 *****/"
+| timechart span=1month count by ChatTitle useother=false</query>
+          <earliest>-4y</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Messenger Calls</title>
+      <chart>
+        <search>
+          <query>index=* source="/tmp/splunkdata/FlattenedMessages*" Type=Call
+| eval Message = Message / 60 / 60
+| rex mode=sed field="ChatTitle" "s/([^\s]+).*/\1 *****/"
+| timechart span=1month sum(Message) as Duration by ChatTitle</query>
+          <earliest>-3y@y</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.nullValueMode">zero</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel id="topemoji">
+      <title>Top Chats</title>
+      <table>
+        <search>
+          <query>index=* source="/tmp/splunkdata/FlattenedMessages*" Type="Generic"
+| stats count, sparkline(count, 1d) as sparkline_count by ChatTitle
+| rex mode=sed field="ChatTitle" "s/([^\s]+).*/\1 *****/"
+| sort 20 -count
+| fields - count</query>
+          <earliest>-12mon@mon</earliest>
+          <latest>@mon</latest>
+        </search>
+        <option name="count">20</option>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+    <panel id="monthlyemoji">
+      <title>Monthly Emote</title>
+      <single>
+        <search>
+          <query>index=* source="/tmp/splunkdata/FlattenedMessages*" Type="Generic" Sender="$me$"
+| eval Message = lower(Message)
+| rex field=Message max_match=0 "(?&lt;emoji&gt;[^\x{0000}-\x{1E95F}\x{E000}—\x{F8FF}\x{F0000}-\x{FFFFF}\x{1F3FB}-\x{1F3FF}\s])"
+| bin span=1month _time
+| stats count by _time, emoji
+| eval timestring = strftime(_time, "%Y %m")
+| sort 0 timestring
+| eventstats max(count) as max_count by _time
+| where count = max_count
+| dedup _time
+| eval label = "Top Emoji"
+| table timestring, emoji
+| transpose header_field=timestring 0
+| fields - column</query>
+          <earliest>-12mon@mon</earliest>
+          <latest>@mon</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="height">668</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">1</option>
+        <option name="trellis.size">large</option>
+      </single>
+    </panel>
+  </row>
+</form>

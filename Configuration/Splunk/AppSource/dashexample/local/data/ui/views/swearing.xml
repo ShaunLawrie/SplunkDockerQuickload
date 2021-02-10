@@ -1,0 +1,112 @@
+<form theme="dark">
+  <label>Facebook Messenger Swearing Overview</label>
+  <fieldset submitButton="false">
+    <input type="text" token="me" searchWhenChanged="true">
+      <label>My Name</label>
+    </input>
+  </fieldset>
+  <row depends="$neverset$">
+    <panel>
+      <html>
+      <style>
+        #sweartimeline {
+          width: 75%!important;
+        }
+        #samuelljackson {
+          width: 25%!important;
+        }
+      </style>
+    </html>
+    </panel>
+  </row>
+  <row>
+    <panel id="sweartimeline">
+      <title>My Swearing Percent over Time</title>
+      <chart>
+        <search>
+          <query>index=* source="/tmp/splunkdata/FlattenedMessages*" Sender="$me$"
+| eval Message = lower(Message)
+| rex field=Message max_match=0 "(?&lt;word&gt;[^\s]+)"
+| fields word
+| mvexpand word
+| rex field=word mode=sed "s/[\.\?]+$//"
+| eval wordtype = case(
+    like(word, "%fuck%"), "swear",
+    like(word, "%shit%"), "swear",
+    1 == 1, "normal"
+)
+| timechart span=1month count(eval(wordtype="swear")) as swear, count(eval(wordtype="normal")) as normal, distinct_count(word) as distinct_words
+| eval swear_percent = (swear / (normal + swear)) * 100
+| eval warning = if(swear_percent &gt; 0.5, 2000, null)
+| fields - normal swear</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.axisLabelsY.majorUnit">1</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisY.maximumNumber">5</option>
+        <option name="charting.axisY2.enabled">1</option>
+        <option name="charting.axisY2.maximumNumber">3000</option>
+        <option name="charting.axisY2.scale">linear</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.overlayFields">warning,distinct_words</option>
+        <option name="charting.fieldDashStyles">{"warning":"shortDash"}</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel id="samuelljackson">
+      <title>Bad Influences</title>
+      <html>
+        <img src="https://i.imgur.com/kvXANm6.jpg"/>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Top Cussers</title>
+      <table>
+        <search>
+          <query>index=* source="/tmp/splunkdata/FlattenedMessages*" Sender=*
+| eval Message = lower(Message)
+| rex field=Message max_match=0 "(?&lt;word&gt;[^\s]+)"
+| fields word, Sender
+| mvexpand word
+| rex field=word mode=sed "s/[\.\?]+$//"
+| eval wordtype = case(
+    like(word, "%fuck%"), "swear",
+    like(word, "%shit%"), "swear",
+    1 == 1, "normal"
+)
+| stats count by wordtype, Sender
+| xyseries Sender, wordtype, count
+| fillnull value=0
+| eval total = normal + swear
+| where total &gt; 50
+| eval swear_percent = (swear / total) * 100
+| fields - normal swear total
+| sort 0 -swear_percent
+| eval Sender = if(Sender = "$me$", "Me", Sender)
+| rex mode=sed field=Sender "s/([^\s]+)\s+.*/\1 ******/"</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="count">50</option>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <format type="color" field="swear_percent">
+          <colorPalette type="minMidMax" maxColor="#DC4E41" minColor="#3C444D"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="Sender">
+          <colorPalette type="map">{"Me":#006D9C}</colorPalette>
+        </format>
+        <format type="number" field="swear_percent">
+          <option name="precision">1</option>
+          <option name="unit">%</option>
+        </format>
+      </table>
+    </panel>
+  </row>
+</form>
